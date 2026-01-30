@@ -25,7 +25,8 @@ export default function ProfilePage() {
 
     setSaving(true)
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      // Non-null assertion: db is guaranteed to be defined after the check above
+      await updateDoc(doc(db!, 'users', user.uid), {
         displayName: displayName.trim() || null,
         readingGoal: readingGoal,
       })
