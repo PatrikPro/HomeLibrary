@@ -28,11 +28,13 @@ export function useBooks(userId?: string, category?: BookCategory) {
       return
     }
 
-    let q = query(collection(db, 'books'), orderBy('addedAt', 'desc'))
+    // TypeScript type narrowing - db is guaranteed to be defined after the check
+    const firestoreDb = db
+    let q = query(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
     
-    if (category && db) {
+    if (category) {
       q = query(
-        collection(db, 'books'),
+        collection(firestoreDb, 'books'),
         where('category', '==', category),
         orderBy('addedAt', 'desc')
       )
@@ -68,7 +70,9 @@ export function useBooks(userId?: string, category?: BookCategory) {
 
 export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<string> {
   if (!db) throw new Error('Firebase není inicializováno')
-  const docRef = await addDoc(collection(db, 'books'), {
+  // TypeScript type narrowing - db is guaranteed to be defined after the check
+  const firestoreDb = db
+  const docRef = await addDoc(collection(firestoreDb, 'books'), {
     ...bookData,
     addedAt: serverTimestamp(),
   })
@@ -77,7 +81,9 @@ export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<s
 
 export async function updateBook(bookId: string, updates: Partial<Book>): Promise<void> {
   if (!db) throw new Error('Firebase není inicializováno')
-  const bookRef = doc(db, 'books', bookId)
+  // TypeScript type narrowing - db is guaranteed to be defined after the check
+  const firestoreDb = db
+  const bookRef = doc(firestoreDb, 'books', bookId)
   const updateData: any = { ...updates }
   
   if (updates.finishedAt) {
@@ -94,13 +100,17 @@ export async function updateBook(bookId: string, updates: Partial<Book>): Promis
 
 export async function deleteBook(bookId: string): Promise<void> {
   if (!db) throw new Error('Firebase není inicializováno')
-  await deleteDoc(doc(db, 'books', bookId))
+  // TypeScript type narrowing - db is guaranteed to be defined after the check
+  const firestoreDb = db
+  await deleteDoc(doc(firestoreDb, 'books', bookId))
 }
 
 export async function searchBooksInLibrary(query: string, userId?: string): Promise<Book[]> {
   if (!query.trim() || !db) return []
   
-  const q = query(collection(db, 'books'), orderBy('addedAt', 'desc'))
+  // TypeScript type narrowing - db is guaranteed to be defined after the check
+  const firestoreDb = db
+  const q = query(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
   const snapshot = await getDocs(q)
   
   const results: Book[] = []

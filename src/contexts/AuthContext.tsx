@@ -43,7 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(firebaseUser)
         // Load user data from Firestore
         if (!db) return
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+        // TypeScript type narrowing - db is guaranteed to be defined after the check
+        const firestoreDb = db
+        const userDoc = await getDoc(doc(firestoreDb, 'users', firebaseUser.uid))
         if (userDoc.exists()) {
           const data = userDoc.data()
           setUserData({
@@ -66,8 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             readingGoal: 24,
             settings: { defaultView: 'grid', notificationsEnabled: true }
           }
-          if (!db) return
-          await setDoc(doc(db, 'users', firebaseUser.uid), {
+          await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), {
             ...newUserData,
             createdAt: serverTimestamp()
           })
@@ -92,7 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isWhitelisted = async (email: string): Promise<boolean> => {
     if (!db) return true // Allow first users if Firebase not initialized
     try {
-      const settingsDoc = await getDoc(doc(db, 'settings', 'whitelist'))
+      // TypeScript type narrowing - db is guaranteed to be defined after the check
+      const firestoreDb = db
+      const settingsDoc = await getDoc(doc(firestoreDb, 'settings', 'whitelist'))
       if (!settingsDoc.exists()) {
         // If whitelist doesn't exist, allow first 2 users
         return true
@@ -120,8 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!whitelisted) {
       throw new Error('Tento email není povolen. Aplikace je určena pouze pro 2 uživatele.')
     }
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    await setDoc(doc(db, 'users', userCredential.user.uid), {
+    // TypeScript type narrowing - auth and db are guaranteed to be defined after the check
+    const firebaseAuth = auth
+    const firestoreDb = db
+    const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+    await setDoc(doc(firestoreDb, 'users', userCredential.user.uid), {
       uid: userCredential.user.uid,
       email,
       displayName,
@@ -134,20 +140,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     if (!auth || !db) throw new Error('Firebase není inicializováno')
+    // TypeScript type narrowing - auth and db are guaranteed to be defined after the check
+    const firebaseAuth = auth
+    const firestoreDb = db
     const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup(auth, provider)
+    const result = await signInWithPopup(firebaseAuth, provider)
     const email = result.user.email!
     const whitelisted = await isWhitelisted(email)
     if (!whitelisted) {
-      await signOut(auth)
+      await signOut(firebaseAuth)
       throw new Error('Tento email není povolen. Aplikace je určena pouze pro 2 uživatele.')
     }
-      // Create user document if it doesn't exist
-      if (!db) return
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid))
+    // Create user document if it doesn't exist
+    const userDoc = await getDoc(doc(firestoreDb, 'users', result.user.uid))
     if (!userDoc.exists()) {
-      if (!db) return
-      await setDoc(doc(db, 'users', result.user.uid), {
+      await setDoc(doc(firestoreDb, 'users', result.user.uid), {
         uid: result.user.uid,
         email,
         displayName: result.user.displayName || undefined,
