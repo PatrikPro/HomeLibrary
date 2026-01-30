@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
-    if (!user) return
+    if (!user || !db) return
 
     setSaving(true)
     try {

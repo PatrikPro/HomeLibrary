@@ -23,14 +23,14 @@ export function useBooks(userId?: string, category?: BookCategory) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !db) {
       setLoading(false)
       return
     }
 
     let q = query(collection(db, 'books'), orderBy('addedAt', 'desc'))
     
-    if (category) {
+    if (category && db) {
       q = query(
         collection(db, 'books'),
         where('category', '==', category),
@@ -67,6 +67,7 @@ export function useBooks(userId?: string, category?: BookCategory) {
 }
 
 export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<string> {
+  if (!db) throw new Error('Firebase není inicializováno')
   const docRef = await addDoc(collection(db, 'books'), {
     ...bookData,
     addedAt: serverTimestamp(),
@@ -75,6 +76,7 @@ export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<s
 }
 
 export async function updateBook(bookId: string, updates: Partial<Book>): Promise<void> {
+  if (!db) throw new Error('Firebase není inicializováno')
   const bookRef = doc(db, 'books', bookId)
   const updateData: any = { ...updates }
   
@@ -91,11 +93,12 @@ export async function updateBook(bookId: string, updates: Partial<Book>): Promis
 }
 
 export async function deleteBook(bookId: string): Promise<void> {
+  if (!db) throw new Error('Firebase není inicializováno')
   await deleteDoc(doc(db, 'books', bookId))
 }
 
 export async function searchBooksInLibrary(query: string, userId?: string): Promise<Book[]> {
-  if (!query.trim()) return []
+  if (!query.trim() || !db) return []
   
   const q = query(collection(db, 'books'), orderBy('addedAt', 'desc'))
   const snapshot = await getDocs(q)
