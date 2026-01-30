@@ -69,7 +69,6 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
         rating: undefined,
         notes: undefined,
         isManual: false,
-        addedAt: new Date(),
       })
       onOpenChange(false)
     } catch (error) {
