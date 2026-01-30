@@ -191,7 +191,7 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
         {!searching && searchQuery && searchResults.length === 0 && (
           <div className="text-center py-8 space-y-4">
             <p className="text-sm text-muted-foreground">
-              Žádné výsledky pro "{searchQuery}"
+              Žádné výsledky pro &quot;{searchQuery}&quot;
             </p>
             <Button variant="outline" onClick={handleManualAdd}>
               Přidat manuálně
