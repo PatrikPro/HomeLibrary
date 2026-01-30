@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is whitelisted
+    function isWhitelisted() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/settings/whitelist) &&
+             request.auth.token.email in get(/databases/$(database)/documents/settings/whitelist).data.allowedEmails;
+    }
+    
+    // Settings collection (whitelist)
+    match /settings/{document} {
+      allow read: if isWhitelisted();
+      allow write: if false; // Only manually via Firebase Console
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isWhitelisted();
+      allow create: if isWhitelisted() && request.auth.uid == userId;
+      allow update, delete: if isWhitelisted() && request.auth.uid == userId;
+    }
+    
+    // Books collection
+    match /books/{bookId} {
+      // Both whitelisted users can read all books
+      allow read: if isWhitelisted();
+      // Anyone can create books
+      allow create: if isWhitelisted();
+      // Only the owner can update/delete their books
+      allow update, delete: if isWhitelisted() && 
+                               resource.data.userId == request.auth.uid;
+    }
+  }
+}
