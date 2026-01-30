@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { 
   collection, 
-  query, 
+  query as firestoreQuery, 
   where, 
   orderBy, 
   addDoc, 
@@ -30,10 +30,10 @@ export function useBooks(userId?: string, category?: BookCategory) {
 
     // TypeScript type narrowing - db is guaranteed to be defined after the check
     const firestoreDb = db
-    let q = query(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
+    let q = firestoreQuery(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
     
     if (category) {
-      q = query(
+      q = firestoreQuery(
         collection(firestoreDb, 'books'),
         where('category', '==', category),
         orderBy('addedAt', 'desc')
@@ -105,12 +105,12 @@ export async function deleteBook(bookId: string): Promise<void> {
   await deleteDoc(doc(firestoreDb, 'books', bookId))
 }
 
-export async function searchBooksInLibrary(query: string, userId?: string): Promise<Book[]> {
-  if (!query.trim() || !db) return []
+export async function searchBooksInLibrary(searchQuery: string, userId?: string): Promise<Book[]> {
+  if (!searchQuery.trim() || !db) return []
   
   // TypeScript type narrowing - db is guaranteed to be defined after the check
   const firestoreDb = db
-  const q = query(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
+  const q = firestoreQuery(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
   const snapshot = await getDocs(q)
   
   const results: Book[] = []
@@ -123,7 +123,7 @@ export async function searchBooksInLibrary(query: string, userId?: string): Prom
       finishedAt: data.finishedAt?.toDate() || undefined,
     } as Book
     
-    const searchLower = query.toLowerCase()
+    const searchLower = searchQuery.toLowerCase()
     if (
       book.title.toLowerCase().includes(searchLower) ||
       book.author.toLowerCase().includes(searchLower) ||
