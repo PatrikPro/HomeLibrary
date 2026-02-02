@@ -30,7 +30,7 @@ async function fetchWithRetry(url: string, retries: number = 2): Promise<Respons
   return fetch(url)
 }
 
-export async function searchBooks(query: string, maxResults: number = 20): Promise<SearchResult> {
+export async function searchBooks(query: string, maxResults: number = 40): Promise<SearchResult> {
   if (!query.trim()) return { items: [], error: null }
 
   // Zkontrolovat cache
@@ -42,20 +42,15 @@ export async function searchBooks(query: string, maxResults: number = 20): Promi
   }
 
   try {
-    // Sestavit URL s parametry
-    const params = new URLSearchParams({
-      q: query,
-      maxResults: maxResults.toString(),
-      printType: 'books',
-    })
+    // Sestavit URL - jednoduchý přístup pro lepší výsledky
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY
+    let url = `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=${maxResults}`
     
     // Přidat API klíč pokud je k dispozici
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY
     if (apiKey) {
-      params.append('key', apiKey)
+      url += `&key=${apiKey}`
     }
 
-    const url = `${GOOGLE_BOOKS_API}?${params.toString()}`
     console.log('Searching books:', url.replace(apiKey || '', '[API_KEY]'))
     
     const response = await fetchWithRetry(url)

@@ -54,13 +54,34 @@ Pro PWA funkce vytvořte ikony:
 
 Můžete použít nástroj jako [PWA Asset Generator](https://github.com/onderceylan/pwa-asset-generator)
 
-## 7. Deployment
+## 7. Google Books API Setup (volitelné, ale doporučeno)
+
+Pro vyšší limity vyhledávání knih (1000 požadavků/den místo ~100):
+
+1. Jděte na [Google Cloud Console](https://console.cloud.google.com/)
+2. Vyberte nebo vytvořte projekt
+3. Povolte "Books API" v sekci "APIs & Services" > "Library"
+4. Vytvořte API klíč:
+   - "APIs & Services" > "Credentials" > "Create Credentials" > "API key"
+   - Vyberte "Books API" a "Public data"
+   - Zkopírujte vytvořený klíč
+5. Omezte klíč (doporučeno):
+   - Klikněte na vytvořený klíč
+   - V "API restrictions" vyberte "Restrict key" > "Books API"
+   - Uložte
+6. Přidejte do `.env.local`:
+   ```
+   NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY=váš_api_klíč_zde
+   ```
+7. Pro Vercel: Přidejte stejnou proměnnou v Settings > Environment Variables
+
+## 8. Deployment
 
 ### Vercel (doporučeno)
 
 1. Push kód na GitHub
 2. Importujte projekt do Vercel
-3. Přidejte environment variables z `.env.local`
+3. Přidejte environment variables z `.env.local` (včetně Google Books API klíče)
 4. Deploy!
 
 ### Firebase Hosting
