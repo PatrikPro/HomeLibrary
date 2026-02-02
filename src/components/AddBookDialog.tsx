@@ -49,6 +49,7 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
       return
     }
 
+    // Zvýšený debounce timeout na 800ms, aby se snížil počet API požadavků
     const timeoutId = setTimeout(async () => {
       setSearching(true)
       setSearchError(null)
@@ -56,7 +57,7 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
       setSearchResults(result.items)
       setSearchError(result.error)
       setSearching(false)
-    }, 500)
+    }, 800)
 
     return () => clearTimeout(timeoutId)
   }, [searchQuery])
@@ -209,8 +210,31 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
         )}
 
         {searchError && (
-          <div className="text-center py-4 px-4 bg-destructive/10 border border-destructive/20 rounded-md">
+          <div className="text-center py-4 px-4 bg-destructive/10 border border-destructive/20 rounded-md space-y-3">
             <p className="text-sm text-destructive">{searchError}</p>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={async () => {
+                if (!searchQuery.trim()) return
+                setSearching(true)
+                setSearchError(null)
+                const result = await searchBooks(searchQuery)
+                setSearchResults(result.items)
+                setSearchError(result.error)
+                setSearching(false)
+              }}
+              disabled={searching}
+            >
+              {searching ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Zkouším znovu...
+                </>
+              ) : (
+                'Zkusit znovu'
+              )}
+            </Button>
           </div>
         )}
 
