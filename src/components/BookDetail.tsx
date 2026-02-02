@@ -135,7 +135,7 @@ export function BookDetail({ book, open, onOpenChange }: BookDetailProps) {
                     <button
                       key={value}
                       type="button"
-                      onClick={() => setRating(rating === value ? undefined : value)}
+                      onClick={() => setRating(rating === value ? null : value)}
                       className="min-h-[44px] min-w-[44px]"
                     >
                       <Star
