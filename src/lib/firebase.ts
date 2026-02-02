@@ -2,7 +2,7 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore } from 'firebase/firestore'
 import { getStorage, FirebaseStorage } from 'firebase/storage'
-import { getAnalytics, Analytics } from 'firebase/analytics'
+import type { Analytics } from 'firebase/analytics'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,14 +30,17 @@ if (typeof window !== 'undefined') {
   db = getFirestore(app)
   storage = getStorage(app)
   
-  // Initialize Analytics only in browser
-  if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
-    try {
-      analytics = getAnalytics(app)
-    } catch (error) {
-      // Analytics might fail in development or if not properly configured
-      console.warn('Firebase Analytics initialization failed:', error)
-    }
+  // Initialize Analytics only in browser with dynamic import
+  if (firebaseConfig.measurementId) {
+    import('firebase/analytics').then(({ getAnalytics }) => {
+      try {
+        analytics = getAnalytics(app!)
+      } catch (error) {
+        console.warn('Firebase Analytics initialization failed:', error)
+      }
+    }).catch(() => {
+      // Analytics module failed to load
+    })
   }
 }
 
