@@ -11,7 +11,7 @@ import {
   signInWithPopup
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { auth, db, initializeFirebase } from '@/lib/firebase'
 import { User } from '@/types'
 
 interface AuthContextType {
@@ -33,55 +33,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !auth) {
+    if (typeof window === 'undefined') {
       setLoading(false)
       return
     }
     
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser)
-        // Load user data from Firestore
-        if (!db) return
-        // TypeScript type narrowing - db is guaranteed to be defined after the check
-        const firestoreDb = db
-        const userDoc = await getDoc(doc(firestoreDb, 'users', firebaseUser.uid))
-        if (userDoc.exists()) {
-          const data = userDoc.data()
-          setUserData({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email!,
-            displayName: data.displayName || firebaseUser.displayName,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            theme: data.theme || 'system',
-            readingGoal: data.readingGoal || 24,
-            settings: data.settings || { defaultView: 'grid', notificationsEnabled: true }
-          })
-        } else {
-          // Create user document if it doesn't exist
-          const newUserData: User = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email!,
-            displayName: firebaseUser.displayName || undefined,
-            createdAt: new Date(),
-            theme: 'system',
-            readingGoal: 24,
-            settings: { defaultView: 'grid', notificationsEnabled: true }
-          }
-          await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), {
-            ...newUserData,
-            createdAt: serverTimestamp()
-          })
-          setUserData(newUserData)
-        }
-      } else {
-        setUser(null)
-        setUserData(null)
+    let unsubscribe: (() => void) | undefined
+    
+    const setup = async () => {
+      await initializeFirebase()
+      
+      if (!auth) {
+        setLoading(false)
+        return
       }
-      setLoading(false)
-    })
+      
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          setUser(firebaseUser)
+          // Load user data from Firestore
+          if (!db) return
+          // TypeScript type narrowing - db is guaranteed to be defined after the check
+          const firestoreDb = db
+          const userDoc = await getDoc(doc(firestoreDb, 'users', firebaseUser.uid))
+          if (userDoc.exists()) {
+            const data = userDoc.data()
+            setUserData({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email!,
+              displayName: data.displayName || firebaseUser.displayName,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              theme: data.theme || 'system',
+              readingGoal: data.readingGoal || 24,
+              settings: data.settings || { defaultView: 'grid', notificationsEnabled: true }
+            })
+          } else {
+            // Create user document if it doesn't exist
+            const newUserData: User = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email!,
+              displayName: firebaseUser.displayName || undefined,
+              createdAt: new Date(),
+              theme: 'system',
+              readingGoal: 24,
+              settings: { defaultView: 'grid', notificationsEnabled: true }
+            }
+            await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), {
+              ...newUserData,
+              createdAt: serverTimestamp()
+            })
+            setUserData(newUserData)
+          }
+        } else {
+          setUser(null)
+          setUserData(null)
+        }
+        setLoading(false)
+      })
+    }
+    
+    setup()
 
-    return () => unsubscribe()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [])
   
   useEffect(() => {
@@ -91,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const isWhitelisted = async (email: string): Promise<boolean> => {
+    await initializeFirebase()
     if (!db) return true // Allow first users if Firebase not initialized
     try {
       // TypeScript type narrowing - db is guaranteed to be defined after the check
@@ -109,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const login = async (email: string, password: string) => {
+    await initializeFirebase()
     if (!auth) throw new Error('Firebase není inicializováno')
     const whitelisted = await isWhitelisted(email)
     if (!whitelisted) {
@@ -118,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signup = async (email: string, password: string, displayName: string) => {
+    await initializeFirebase()
     if (!auth || !db) throw new Error('Firebase není inicializováno')
     const whitelisted = await isWhitelisted(email)
     if (!whitelisted) {
@@ -139,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const loginWithGoogle = async () => {
+    await initializeFirebase()
     if (!auth || !db) throw new Error('Firebase není inicializováno')
     // TypeScript type narrowing - auth and db are guaranteed to be defined after the check
     const firebaseAuth = auth
@@ -167,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = async () => {
+    await initializeFirebase()
     if (!auth) throw new Error('Firebase není inicializováno')
     await signOut(auth)
   }

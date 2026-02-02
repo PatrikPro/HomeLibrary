@@ -15,7 +15,7 @@ import {
   Timestamp,
   serverTimestamp
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, initializeFirebase } from '@/lib/firebase'
 import { Book, BookCategory } from '@/types'
 
 export function useBooks(userId?: string, category?: BookCategory) {
@@ -23,52 +23,68 @@ export function useBooks(userId?: string, category?: BookCategory) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!userId || !db) {
+    if (!userId) {
       setLoading(false)
       return
     }
 
-    // TypeScript type narrowing - db is guaranteed to be defined after the check
-    const firestoreDb = db
-    let q = firestoreQuery(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
-    
-    if (category) {
-      q = firestoreQuery(
-        collection(firestoreDb, 'books'),
-        where('category', '==', category),
-        orderBy('addedAt', 'desc')
+    let unsubscribe: (() => void) | undefined
+
+    const setup = async () => {
+      await initializeFirebase()
+      
+      if (!db) {
+        setLoading(false)
+        return
+      }
+
+      // TypeScript type narrowing - db is guaranteed to be defined after the check
+      const firestoreDb = db
+      let q = firestoreQuery(collection(firestoreDb, 'books'), orderBy('addedAt', 'desc'))
+      
+      if (category) {
+        q = firestoreQuery(
+          collection(firestoreDb, 'books'),
+          where('category', '==', category),
+          orderBy('addedAt', 'desc')
+        )
+      }
+
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const booksData: Book[] = []
+          snapshot.forEach((doc) => {
+            const data = doc.data()
+            booksData.push({
+              id: doc.id,
+              ...data,
+              addedAt: data.addedAt?.toDate() || new Date(),
+              finishedAt: data.finishedAt?.toDate() || undefined,
+            } as Book)
+          })
+          setBooks(booksData)
+          setLoading(false)
+        },
+        (error) => {
+          console.error('Error fetching books:', error)
+          setLoading(false)
+        }
       )
     }
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const booksData: Book[] = []
-        snapshot.forEach((doc) => {
-          const data = doc.data()
-          booksData.push({
-            id: doc.id,
-            ...data,
-            addedAt: data.addedAt?.toDate() || new Date(),
-            finishedAt: data.finishedAt?.toDate() || undefined,
-          } as Book)
-        })
-        setBooks(booksData)
-        setLoading(false)
-      },
-      (error) => {
-        console.error('Error fetching books:', error)
-        setLoading(false)
-      }
-    )
+    setup()
 
-    return () => unsubscribe()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [userId, category])
 
   return { books, loading }
 }
 
 export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<string> {
+  await initializeFirebase()
   if (!db) throw new Error('Firebase není inicializováno')
   // TypeScript type narrowing - db is guaranteed to be defined after the check
   const firestoreDb = db
@@ -86,6 +102,7 @@ export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<s
 }
 
 export async function updateBook(bookId: string, updates: Partial<Book>): Promise<void> {
+  await initializeFirebase()
   if (!db) throw new Error('Firebase není inicializováno')
   // TypeScript type narrowing - db is guaranteed to be defined after the check
   const firestoreDb = db
@@ -105,6 +122,7 @@ export async function updateBook(bookId: string, updates: Partial<Book>): Promis
 }
 
 export async function deleteBook(bookId: string): Promise<void> {
+  await initializeFirebase()
   if (!db) throw new Error('Firebase není inicializováno')
   // TypeScript type narrowing - db is guaranteed to be defined after the check
   const firestoreDb = db
@@ -112,6 +130,7 @@ export async function deleteBook(bookId: string): Promise<void> {
 }
 
 export async function searchBooksInLibrary(searchQuery: string, userId?: string): Promise<Book[]> {
+  await initializeFirebase()
   if (!searchQuery.trim() || !db) return []
   
   // TypeScript type narrowing - db is guaranteed to be defined after the check

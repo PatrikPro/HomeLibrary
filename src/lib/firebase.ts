@@ -1,7 +1,7 @@
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
-import { getAuth, Auth } from 'firebase/auth'
-import { getFirestore, Firestore } from 'firebase/firestore'
-import { getStorage, FirebaseStorage } from 'firebase/storage'
+import type { FirebaseApp } from 'firebase/app'
+import type { Auth } from 'firebase/auth'
+import type { Firestore } from 'firebase/firestore'
+import type { FirebaseStorage } from 'firebase/storage'
 import type { Analytics } from 'firebase/analytics'
 
 const firebaseConfig = {
@@ -19,29 +19,41 @@ let auth: Auth | undefined
 let db: Firestore | undefined
 let storage: FirebaseStorage | undefined
 let analytics: Analytics | undefined
+let initialized = false
 
-if (typeof window !== 'undefined') {
+async function initializeFirebase() {
+  if (initialized || typeof window === 'undefined') return
+  
+  const { initializeApp, getApps } = await import('firebase/app')
+  const { getAuth } = await import('firebase/auth')
+  const { getFirestore } = await import('firebase/firestore')
+  const { getStorage } = await import('firebase/storage')
+  
   if (!getApps().length) {
     app = initializeApp(firebaseConfig)
   } else {
     app = getApps()[0]
   }
+  
   auth = getAuth(app)
   db = getFirestore(app)
   storage = getStorage(app)
+  initialized = true
   
-  // Initialize Analytics only in browser with dynamic import
+  // Initialize Analytics
   if (firebaseConfig.measurementId) {
-    import('firebase/analytics').then(({ getAnalytics }) => {
-      try {
-        analytics = getAnalytics(app!)
-      } catch (error) {
-        console.warn('Firebase Analytics initialization failed:', error)
-      }
-    }).catch(() => {
-      // Analytics module failed to load
-    })
+    try {
+      const { getAnalytics } = await import('firebase/analytics')
+      analytics = getAnalytics(app)
+    } catch (error) {
+      console.warn('Firebase Analytics initialization failed:', error)
+    }
   }
 }
 
-export { auth, db, storage, analytics }
+// Initialize immediately on client
+if (typeof window !== 'undefined') {
+  initializeFirebase()
+}
+
+export { auth, db, storage, analytics, initializeFirebase }
