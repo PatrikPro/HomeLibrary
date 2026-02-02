@@ -34,7 +34,7 @@ export function BookDetail({ book, open, onOpenChange }: BookDetailProps) {
   const router = useRouter()
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [category, setCategory] = useState<BookCategory>(book.category)
-  const [rating, setRating] = useState<number | undefined>(book.rating)
+  const [rating, setRating] = useState<number | null>(book.rating)
   const [notes, setNotes] = useState(book.notes || '')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
