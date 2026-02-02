@@ -5,15 +5,15 @@ export interface Book {
   isbn?: string
   title: string
   author: string
-  description?: string
-  coverUrl?: string
-  pageCount?: number
-  publishedYear?: number
-  genres?: string[]
+  description: string
+  coverUrl: string
+  pageCount: number
+  publishedYear: number | null
+  genres: string[]
   userId: string
   category: BookCategory
-  rating?: number // 1-5
-  notes?: string
+  rating: number | null // 1-5, null místo undefined
+  notes: string // prázdný string místo undefined
   addedAt: Date
   finishedAt?: Date
   isManual: boolean

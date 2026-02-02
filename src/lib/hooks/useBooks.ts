@@ -72,8 +72,14 @@ export async function addBook(bookData: Omit<Book, 'id' | 'addedAt'>): Promise<s
   if (!db) throw new Error('Firebase není inicializováno')
   // TypeScript type narrowing - db is guaranteed to be defined after the check
   const firestoreDb = db
+  
+  // Vyčisti data - odstraň všechny undefined hodnoty
+  const cleanData = Object.fromEntries(
+    Object.entries(bookData).filter(([_, v]) => v !== undefined)
+  )
+  
   const docRef = await addDoc(collection(firestoreDb, 'books'), {
-    ...bookData,
+    ...cleanData,
     addedAt: serverTimestamp(),
   })
   return docRef.id
@@ -127,7 +133,7 @@ export async function searchBooksInLibrary(searchQuery: string, userId?: string)
     if (
       book.title.toLowerCase().includes(searchLower) ||
       book.author.toLowerCase().includes(searchLower) ||
-      book.description?.toLowerCase().includes(searchLower)
+      book.description.toLowerCase().includes(searchLower)
     ) {
       results.push(book)
     }

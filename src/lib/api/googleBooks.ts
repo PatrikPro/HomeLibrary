@@ -30,14 +30,14 @@ export function formatBookFromGoogleBooks(item: GoogleBooksItem) {
 
   return {
     id: item.id,
-    isbn,
-    title: volumeInfo.title,
-    author: volumeInfo.authors?.join(', ') || 'Unknown Author',
-    description: volumeInfo.description,
+    isbn: isbn || undefined, // undefined je OK zde, protože isbn je optional
+    title: volumeInfo.title || 'Neznámý název',
+    author: volumeInfo.authors?.join(', ') || 'Neznámý autor',
+    description: volumeInfo.description || '',
     coverUrl: volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') || 
-              volumeInfo.imageLinks?.smallThumbnail?.replace('http://', 'https://'),
-    pageCount: volumeInfo.pageCount,
-    publishedYear: volumeInfo.publishedDate ? parseInt(volumeInfo.publishedDate.split('-')[0]) : undefined,
-    genres: volumeInfo.categories,
+              volumeInfo.imageLinks?.smallThumbnail?.replace('http://', 'https://') || '',
+    pageCount: volumeInfo.pageCount || 0,
+    publishedYear: volumeInfo.publishedDate ? parseInt(volumeInfo.publishedDate.split('-')[0]) : null,
+    genres: volumeInfo.categories || [],
   }
 }

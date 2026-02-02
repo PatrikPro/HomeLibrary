@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { addBook } from '@/lib/hooks/useBooks'
 import { searchBooks, formatBookFromGoogleBooks } from '@/lib/api/googleBooks'
-import { GoogleBooksItem } from '@/types'
+import { GoogleBooksItem, Book } from '@/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
@@ -62,14 +62,30 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
     setAdding(true)
     try {
       const formatted = formatBookFromGoogleBooks(bookItem)
-      await addBook({
-        ...formatted,
-        userId: user.uid,
+      
+      // Vytvořit data BEZ undefined hodnot
+      const bookData: Omit<Book, 'id' | 'addedAt'> = {
+        title: formatted.title || 'Neznámý název',
+        author: formatted.author || 'Neznámý autor',
+        description: formatted.description || '',
+        coverUrl: formatted.coverUrl || '',
+        pageCount: formatted.pageCount || 0,
+        publishedYear: formatted.publishedYear ?? null,
+        genres: formatted.genres || [],
         category,
-        rating: undefined,
-        notes: undefined,
+        userId: user.uid,
         isManual: false,
-      })
+        // DŮLEŽITÉ: Explicitně nastavit rating a notes
+        rating: null,
+        notes: '',
+      }
+
+      // Přidat ISBN pouze pokud existuje
+      if (formatted.isbn) {
+        bookData.isbn = formatted.isbn
+      }
+
+      await addBook(bookData)
       onOpenChange(false)
     } catch (error) {
       console.error('Error adding book:', error)

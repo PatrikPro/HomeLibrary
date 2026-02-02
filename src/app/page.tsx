@@ -35,7 +35,7 @@ export default function HomePage() {
       (book) =>
         book.title.toLowerCase().includes(query) ||
         book.author.toLowerCase().includes(query) ||
-        book.description?.toLowerCase().includes(query)
+        book.description.toLowerCase().includes(query)
     )
   }, [books, searchQuery])
 
