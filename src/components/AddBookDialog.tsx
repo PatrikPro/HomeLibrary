@@ -27,6 +27,7 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<GoogleBooksItem[]>([])
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [selectedBook, setSelectedBook] = useState<GoogleBooksItem | null>(null)
   const [category, setCategory] = useState<BookCategory>('wishlist')
   const [adding, setAdding] = useState(false)
@@ -35,6 +36,7 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
     if (!open) {
       setSearchQuery('')
       setSearchResults([])
+      setSearchError(null)
       setSelectedBook(null)
       setCategory('wishlist')
     }
@@ -43,13 +45,16 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setSearchError(null)
       return
     }
 
     const timeoutId = setTimeout(async () => {
       setSearching(true)
-      const results = await searchBooks(searchQuery)
-      setSearchResults(results)
+      setSearchError(null)
+      const result = await searchBooks(searchQuery)
+      setSearchResults(result.items)
+      setSearchError(result.error)
       setSearching(false)
     }, 500)
 
@@ -203,7 +208,13 @@ export function AddBookDialog({ open, onOpenChange }: AddBookDialogProps) {
           </div>
         )}
 
-        {!searching && searchQuery && searchResults.length === 0 && (
+        {searchError && (
+          <div className="text-center py-4 px-4 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-sm text-destructive">{searchError}</p>
+          </div>
+        )}
+
+        {!searching && searchQuery && searchResults.length === 0 && !searchError && (
           <div className="text-center py-8 space-y-4">
             <p className="text-sm text-muted-foreground">
               Žádné výsledky pro &quot;{searchQuery}&quot;
